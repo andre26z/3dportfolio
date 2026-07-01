@@ -46,11 +46,12 @@ export function Structure({
         -center.z * scale,
       );
     } else {
-      // Fit horizontal footprint and rest on the ground.
+      // Fit horizontal footprint, center over the origin (so yaw spins in
+      // place instead of orbiting), and rest on the ground.
       const maxXZ = Math.max(size.x, size.z) || 1;
       const scale = def.footprint / maxXZ;
       clone.scale.setScalar(scale);
-      clone.position.y = -box.min.y * scale;
+      clone.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale);
     }
 
     clone.traverse((o: Object3D) => {

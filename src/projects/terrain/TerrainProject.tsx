@@ -10,7 +10,7 @@ import {
 } from "three";
 import { Terrain, TERRAIN_SIZE } from "./Terrain";
 import { Structure } from "./Structure";
-import { CardTray, CardFace } from "./CardTray";
+import { CardTray } from "./CardTray";
 import { STRUCTURES } from "./structures";
 
 export interface DeckCard {
@@ -38,10 +38,14 @@ function freshDeck(): DeckCard[] {
 function PlacedStructure({
   id,
   position,
+  moving,
+  onMoveStart,
   onDelete,
 }: {
   id: string;
   position: [number, number, number];
+  moving: boolean;
+  onMoveStart: () => void;
   onDelete: () => void;
 }) {
   const [hover, setHover] = useState(false);
@@ -58,6 +62,10 @@ function PlacedStructure({
     <group
       position={position}
       rotation={[0, yaw, 0]}
+      onPointerDown={(e) => {
+        e.stopPropagation();
+        onMoveStart();
+      }}
       onPointerOver={(e) => {
         e.stopPropagation();
         show(true);
@@ -68,7 +76,7 @@ function PlacedStructure({
       }}
     >
       <Structure id={id} />
-      {hover && (
+      {hover && !moving && (
         <Html center position={[0, 4.5, 0]} zIndexRange={[20, 0]}>
           <div
             style={controls}
@@ -116,14 +124,18 @@ function SceneProbe({
 export function TerrainProject() {
   const [deck] = useState<DeckCard[]>(freshDeck);
   const [placed, setPlaced] = useState<Placed[]>([]);
-  const [drag, setDrag] = useState<{ card: DeckCard; x: number; y: number } | null>(
-    null,
-  );
+  const [drag, setDrag] = useState<DeckCard | null>(null);
+  const [ghost, setGhost] = useState<[number, number, number] | null>(null);
+  const [moving, setMoving] = useState<number | null>(null); // placed key being repositioned
 
   const camRef = useRef<Camera | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const dragRef = useRef<typeof drag>(null);
+  const dragRef = useRef<DeckCard | null>(null);
+  const ghostRef = useRef<[number, number, number] | null>(null);
+  const movingRef = useRef<number | null>(null);
   dragRef.current = drag;
+  ghostRef.current = ghost;
+  movingRef.current = moving;
 
   const raycaster = useMemo(() => new Raycaster(), []);
 
@@ -144,28 +156,44 @@ export function TerrainProject() {
     return hit;
   };
 
-  // Drag lifecycle lives on window so the card follows the cursor anywhere and
-  // a release outside the terrain simply cancels.
+  // Drag lifecycle lives on window: pressing a card arms it, a translucent 3D
+  // model follows the cursor across the terrain, and releasing drops it (or
+  // cancels if released off the terrain).
   useEffect(() => {
     const move = (e: PointerEvent) => {
-      if (dragRef.current)
-        setDrag((d) => (d ? { ...d, x: e.clientX, y: e.clientY } : d));
-    };
-    const up = (e: PointerEvent) => {
-      const d = dragRef.current;
-      if (!d) return;
+      // Repositioning an existing structure.
+      if (movingRef.current != null) {
+        const hit = groundPoint(e.clientX, e.clientY);
+        if (hit)
+          setPlaced((prev) =>
+            prev.map((p) =>
+              p.key === movingRef.current
+                ? { ...p, position: [hit.x, 0, hit.z] }
+                : p,
+            ),
+          );
+        return;
+      }
+      // Dragging a new structure off a card.
+      if (!dragRef.current) return;
       const hit = groundPoint(e.clientX, e.clientY);
-      if (hit) {
+      setGhost(hit ? [hit.x, 0, hit.z] : null);
+    };
+    const up = () => {
+      if (movingRef.current != null) {
+        setMoving(null);
+        return;
+      }
+      const d = dragRef.current;
+      const pos = ghostRef.current;
+      if (d && pos) {
         setPlaced((prev) => [
           ...prev,
-          {
-            key: Date.now() + Math.random(),
-            id: d.card.id,
-            position: [hit.x, 0, hit.z],
-          },
+          { key: Date.now() + Math.random(), id: d.id, position: pos },
         ]);
       }
       setDrag(null);
+      setGhost(null);
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
@@ -175,8 +203,11 @@ export function TerrainProject() {
     };
   }, []);
 
-  const grab = (card: DeckCard, e: React.PointerEvent) =>
-    setDrag({ card, x: e.clientX, y: e.clientY });
+  const grab = (card: DeckCard, e: React.PointerEvent) => {
+    const hit = groundPoint(e.clientX, e.clientY);
+    setDrag(card);
+    setGhost(hit ? [hit.x, 0, hit.z] : null);
+  };
 
   const remove = (key: number) =>
     setPlaced((prev) => prev.filter((p) => p.key !== key));
@@ -214,44 +245,33 @@ export function TerrainProject() {
             key={p.key}
             id={p.id}
             position={p.position}
+            moving={moving === p.key}
+            onMoveStart={() => setMoving(p.key)}
             onDelete={() => remove(p.key)}
           />
         ))}
 
-        {/* Zoom only: side-turn and pan disabled, focus locked on center. */}
+        {drag && ghost && <Structure id={drag.id} position={ghost} ghost />}
+
+        {/* Turn left/right + zoom; pan disabled so focus stays on the center. */}
         <OrbitControls
           makeDefault
+          enabled={moving == null && drag == null}
           target={[0, 0, 0]}
           enablePan={false}
-          enableRotate={false}
           minDistance={20}
           maxDistance={140}
+          minPolarAngle={0.15}
+          maxPolarAngle={Math.PI / 2.2}
         />
       </Canvas>
 
-      <CardTray deck={deck} draggingUid={drag?.card.uid ?? null} onGrab={grab} />
-
-      {/* Floating card that tracks the cursor while dragging. */}
-      {drag && (
-        <div
-          style={{
-            position: "fixed",
-            left: drag.x,
-            top: drag.y,
-            transform: "translate(-50%,-50%) rotate(-4deg) scale(0.9)",
-            pointerEvents: "none",
-            zIndex: 30,
-            filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.6))",
-          }}
-        >
-          <CardFace id={drag.card.id} />
-        </div>
-      )}
+      <CardTray deck={deck} draggingUid={drag?.uid ?? null} onGrab={grab} />
 
       <div style={hud}>
         <span>
-          Drag a card onto the land · scroll to zoom · hover a structure to
-          rotate or delete
+          Drag a card onto the land · drag a structure to move it · drag empty
+          ground to turn · scroll to zoom · hover to rotate or delete
         </span>
         <span style={{ opacity: 0.7 }}>{placed.length} placed</span>
       </div>
