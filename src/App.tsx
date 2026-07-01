@@ -3,6 +3,7 @@ import { Navbar } from './components/Navbar';
 import { SoundProject } from './projects/SoundProject';
 import { SolarSystemProject } from './projects/solar/SolarSystemProject';
 import { TerrainProject } from './projects/terrain/TerrainProject';
+import { RoomProject } from './projects/room/RoomProject';
 
 // Portfolio shell: full-screen project canvas with an overlaid navbar.
 export default function App() {
@@ -16,6 +17,7 @@ export default function App() {
           <Route path="/projects/solar" element={<SolarSystemProject />} />
           <Route path="/projects/sound" element={<SoundProject />} />
           <Route path="/projects/terrain" element={<TerrainProject />} />
+          <Route path="/projects/room" element={<RoomProject />} />
         </Routes>
       </div>
     </BrowserRouter>

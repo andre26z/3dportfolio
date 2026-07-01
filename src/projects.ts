@@ -14,5 +14,10 @@ export const projects: ProjectMeta[] = [
     title: "Medieval Card Scenario",
     nav: "Medieval Scenario Creator",
   },
+  {
+    slug: "room",
+    title: "Room Card Scenario",
+    nav: "Room Designer",
+  },
   // future: { slug: 'shaders', title: 'Shaders', nav: 'Shaders' },
 ];
