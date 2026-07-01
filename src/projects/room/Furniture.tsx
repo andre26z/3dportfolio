@@ -6,6 +6,20 @@ import { FURNITURE, furnitureById } from "./furniture";
 // Preload every model so the first drop doesn't stall.
 FURNITURE.forEach((f) => useGLTF.preload(f.url));
 
+// World-space height of a placed model after footprint normalization. Lets the
+// hover controls sit right on top of each piece instead of a fixed gap.
+export function useModelHeight(id: string): number {
+  const def = furnitureById(id);
+  const { scene } = useGLTF(def.url);
+  return useMemo(() => {
+    const box = new Box3().setFromObject(scene);
+    const size = new Vector3();
+    box.getSize(size);
+    const maxXZ = Math.max(size.x, size.z) || 1;
+    return size.y * (def.footprint / maxXZ);
+  }, [scene, def.footprint]);
+}
+
 interface FurnitureProps {
   id: string;
   position?: [number, number, number];

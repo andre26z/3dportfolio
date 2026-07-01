@@ -3,7 +3,7 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, Html } from "@react-three/drei";
 import { Camera, Plane, Raycaster, Vector2, Vector3 } from "three";
 import { Room, ROOM_SIZE } from "./Room";
-import { Furniture } from "./Furniture";
+import { Furniture, useModelHeight } from "./Furniture";
 import { CardTray } from "./CardTray";
 import { FURNITURE } from "./furniture";
 
@@ -45,6 +45,7 @@ function PlacedFurniture({
   const [hover, setHover] = useState(false);
   const [yaw, setYaw] = useState(0);
   const [lift, setLift] = useState(0); // vertical offset above the floor
+  const height = useModelHeight(id);
   const timer = useRef<ReturnType<typeof setTimeout>>();
 
   const show = (v: boolean) => {
@@ -74,7 +75,7 @@ function PlacedFurniture({
         <Furniture id={id} highlight={hover || moving} />
       </group>
       {hover && !moving && (
-        <Html center position={[0, lift + 4.5, 0]} zIndexRange={[20, 0]}>
+        <Html center position={[0, lift + height + 1, 0]} zIndexRange={[20, 0]}>
           <div
             style={controls}
             onPointerEnter={() => show(true)}
@@ -232,7 +233,7 @@ export function RoomProject() {
         shadows
         style={{ position: "absolute", inset: 0 }}
       >
-        <color attach="background" args={["#efe7d8"]} />
+        <color attach="background" args={["#0a0c12"]} />
         <SceneProbe camRef={camRef} canvasRef={canvasRef} />
 
         <ambientLight intensity={0.7} />
@@ -303,10 +304,10 @@ const hud: React.CSSProperties = {
   alignItems: "center",
   padding: "10px 20px",
   borderRadius: 999,
-  background: "rgba(255,250,240,0.7)",
+  background: "rgba(20,18,14,0.55)",
   backdropFilter: "blur(10px)",
-  border: "1px solid rgba(120,95,60,0.3)",
-  color: "#3a2f22",
+  border: "1px solid rgba(120,95,60,0.35)",
+  color: "#f3e9d6",
   fontSize: 14,
   zIndex: 10,
   whiteSpace: "nowrap",
@@ -318,7 +319,7 @@ const controls: React.CSSProperties = {
   gap: 6,
   padding: 4,
   borderRadius: 999,
-  background: "rgba(255,250,240,0.95)",
+  background: "rgba(20,18,14,0.9)",
   border: "1px solid rgba(120,95,60,0.4)",
   transform: "translateY(-4px)",
 };
@@ -328,8 +329,8 @@ const ctrlBtn: React.CSSProperties = {
   height: 30,
   borderRadius: "50%",
   border: "1px solid rgba(120,95,60,0.5)",
-  background: "rgba(250,244,232,0.98)",
-  color: "#3a2f22",
+  background: "rgba(36,30,22,0.98)",
+  color: "#f3e9d6",
   fontSize: 15,
   lineHeight: 1,
   cursor: "pointer",
@@ -350,7 +351,7 @@ const credits: React.CSSProperties = {
   maxWidth: 360,
   fontSize: 10,
   lineHeight: 1.4,
-  color: "#3a2f22",
+  color: "#f3e9d6",
   opacity: 0.5,
   zIndex: 10,
   pointerEvents: "none",
