@@ -4,9 +4,12 @@ import { AnalyserContext } from '../components/AnalyserContext';
 import { Scene } from '../components/Scene';
 import { Controls } from '../components/Controls';
 
-// Same-origin proxy path (see vite.config.ts) so the AnalyserNode gets real,
-// non-tainted frequency data from the radio stream.
-const STREAM_URL = '/stream';
+// The radio stream now sends CORS headers (Access-Control-Allow-Origin), so we
+// can hit it directly with crossOrigin="anonymous" and the AnalyserNode still
+// gets real, non-tainted data — no same-origin proxy required. Works in both
+// dev and production (the dev /stream proxy in vite.config.ts is a fallback).
+const STREAM_URL =
+  'https://0nlineradio.radioho.st/lounge-ibiza-chillout-lounge?ref=rb26';
 
 // The Sound project: the audio-reactive terrain + architecture visualizer.
 export function SoundProject() {
