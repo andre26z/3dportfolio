@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/palette.ts","./src/audio/bands.ts","./src/audio/useAudioAnalyser.ts","./src/components/AnalyserContext.tsx","./src/components/Architecture.tsx","./src/components/Controls.tsx","./src/components/Scene.tsx","./src/components/Terrain.tsx","./src/shaders/terrain.ts","./vite.config.ts"],"version":"5.9.3"}
