@@ -9,5 +9,6 @@ export interface ProjectMeta {
 export const projects: ProjectMeta[] = [
   { slug: "", title: "Solar System", nav: "Solar System" },
   { slug: "sound", title: "Soundwave", nav: "Soundwave" },
+  { slug: "terrain", title: "Medieval Card Scenario", nav: "Medieval" },
   // future: { slug: 'shaders', title: 'Shaders', nav: 'Shaders' },
 ];
