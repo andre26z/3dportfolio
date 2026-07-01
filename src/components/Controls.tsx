@@ -29,17 +29,46 @@ const btn: React.CSSProperties = {
   color: '#0a0a12',
 };
 
+const spinner: React.CSSProperties = {
+  width: 14,
+  height: 14,
+  borderRadius: '50%',
+  border: '2px solid rgba(10,10,18,0.35)',
+  borderTopColor: '#0a0a12',
+  animation: 'marble-spin 0.7s linear infinite',
+  display: 'inline-block',
+};
+
+// inject the keyframes once
+if (typeof document !== 'undefined' && !document.getElementById('spin-kf')) {
+  const style = document.createElement('style');
+  style.id = 'spin-kf';
+  style.textContent =
+    '@keyframes marble-spin{to{transform:rotate(360deg)}}';
+  document.head.appendChild(style);
+}
+
 export function Controls() {
-  const { play, pause, playing, error, setVolume } = useAnalyser();
+  const { play, pause, playing, loading, error, setVolume } = useAnalyser();
   const [vol, setVol] = useState(0.9);
 
   return (
     <div style={wrap}>
       <button
-        style={btn}
+        style={{ ...btn, opacity: loading ? 0.8 : 1 }}
         onClick={() => (playing ? pause() : play())}
+        disabled={loading}
       >
-        {playing ? '❚❚ Pause' : '▶ Play'}
+        {loading ? (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={spinner} />
+            Loading
+          </span>
+        ) : playing ? (
+          '❚❚ Pause'
+        ) : (
+          '▶ Play'
+        )}
       </button>
       <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         Vol

@@ -1,26 +1,32 @@
-// Vertex shader: displace a flat plane into rippling terrain. Bass raises the
-// amplitude and the whole field scrolls over time for a fly-over feel.
+// Vertex shader: displace a flat plane into rippling waves. Bass raises the
+// amplitude and the field scrolls over time for a fly-over feel.
+//
+// IMPORTANT: the `wave()` function below must stay in sync with `waveHeight()`
+// in components/waveField.ts — that CPU mirror is what keeps the marble bouncing
+// exactly on the visible surface.
 export const terrainVertex = /* glsl */ `
   uniform float uTime;
   uniform float uBass;
   uniform float uMid;
   varying float vHeight;
 
-  // cheap value-noise via stacked sines — no texture needed
-  float ridged(vec2 p) {
+  float wave(vec2 p) {
+    float t = uTime;
+    float amp = 0.6 + uBass * 5.0;
+    float py = p.y + t * 1.5;
     float h = 0.0;
-    h += sin(p.x * 0.6 + uTime * 0.4) * 0.6;
-    h += sin(p.y * 0.5 - uTime * 0.3) * 0.6;
-    h += sin((p.x + p.y) * 0.9 + uTime * 0.6) * 0.35;
-    h += sin(length(p) * 1.2 - uTime) * 0.25;
+    h += sin(p.x * 0.6 + t * 0.4) * 0.6;
+    h += sin(py * 0.5 - t * 0.3) * 0.6;
+    h += sin((p.x + py) * 0.9 + t * 0.6) * 0.35;
+    h += sin(length(vec2(p.x, py)) * 1.2 - t) * 0.25;
+    h *= amp;
+    h += uMid * 1.5 * sin(p.x * 2.0 + t * 2.0);
     return h;
   }
 
   void main() {
     vec3 pos = position;
-    float amp = 0.6 + uBass * 5.0;
-    float h = ridged(pos.xy + vec2(0.0, uTime * 1.5)) * amp;
-    h += uMid * 1.5 * sin(pos.x * 2.0 + uTime * 2.0);
+    float h = wave(pos.xy);
     pos.z += h;
     vHeight = h;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);

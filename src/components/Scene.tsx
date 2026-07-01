@@ -1,14 +1,19 @@
+import { useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { Terrain } from './Terrain';
-import { Architecture } from './Architecture';
+import { Marble } from './Marble';
 import { palette } from '../palette';
 import { useAnalyser } from './AnalyserContext';
+import type { WaveState } from './waveField';
 
 // Single owner of the per-frame analyser refresh + slow camera fly-over.
 export function Scene() {
   const { refresh, bandsRef } = useAnalyser();
   const { camera } = useThree();
+
+  // Shared wave surface state: Terrain writes it, Marble reads it.
+  const waveRef = useRef<WaveState>({ time: 0, bass: 0, mid: 0 });
 
   useFrame((state) => {
     refresh(); // pull latest frequency frame once per frame
@@ -31,8 +36,8 @@ export function Scene() {
       <directionalLight position={[10, 20, 10]} intensity={1.2} />
       <pointLight position={[0, 8, 0]} intensity={2} color={palette.archHot} />
 
-      <Terrain />
-      <Architecture />
+      <Terrain waveRef={waveRef} />
+      <Marble waveRef={waveRef} />
 
       <EffectComposer>
         <Bloom

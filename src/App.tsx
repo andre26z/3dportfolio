@@ -10,10 +10,10 @@ export default function App() {
       <div style={{ position: 'fixed', inset: 0 }}>
         <Navbar />
         <Routes>
-          {/* Sound visualizer is the landing page */}
-          <Route path="/" element={<SoundProject />} />
-          <Route path="/projects/sound" element={<SoundProject />} />
+          {/* Solar system is the landing page */}
+          <Route path="/" element={<SolarSystemProject />} />
           <Route path="/projects/solar" element={<SolarSystemProject />} />
+          <Route path="/projects/sound" element={<SoundProject />} />
         </Routes>
       </div>
     </BrowserRouter>

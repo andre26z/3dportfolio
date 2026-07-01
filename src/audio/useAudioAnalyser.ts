@@ -9,6 +9,7 @@ export interface AudioAnalyser {
   play: () => Promise<void>;
   pause: () => void;
   playing: boolean;
+  loading: boolean;
   ready: boolean;
   error: string | null;
   setVolume: (v: number) => void;
@@ -34,6 +35,7 @@ export function useAudioAnalyser(src: string): AudioAnalyser & {
   const bandsRef = useRef<Bands>({ bass: 0, mid: 0, treble: 0 });
 
   const [playing, setPlaying] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,9 +48,15 @@ export function useAudioAnalyser(src: string): AudioAnalyser & {
     audio.crossOrigin = 'anonymous';
     audio.src = src;
     audio.preload = 'none';
-    audio.addEventListener('error', () =>
-      setError('Stream failed to load (check proxy / stream URL).'),
-    );
+    audio.addEventListener('error', () => {
+      setError('Stream failed to load (check proxy / stream URL).');
+      setLoading(false);
+    });
+    // fires once audio actually starts producing sound -> stop the spinner
+    audio.addEventListener('playing', () => {
+      setLoading(false);
+      setPlaying(true);
+    });
     audioRef.current = audio;
 
     const Ctx =
@@ -77,18 +85,22 @@ export function useAudioAnalyser(src: string): AudioAnalyser & {
   const play = useCallback(async () => {
     try {
       setError(null);
+      setLoading(true); // spinner until the 'playing' event fires
       ensureGraph();
       await ctxRef.current?.resume();
       await audioRef.current?.play();
-      setPlaying(true);
+      // note: keep loading true here; the 'playing' listener clears it once
+      // the stream actually starts producing sound.
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Playback failed.');
+      setLoading(false);
     }
   }, [ensureGraph]);
 
   const pause = useCallback(() => {
     audioRef.current?.pause();
     setPlaying(false);
+    setLoading(false);
   }, []);
 
   const setVolume = useCallback((v: number) => {
@@ -119,11 +131,12 @@ export function useAudioAnalyser(src: string): AudioAnalyser & {
       play,
       pause,
       playing,
+      loading,
       ready,
       error,
       setVolume,
       refresh,
     }),
-    [play, pause, playing, ready, error, setVolume, refresh],
+    [play, pause, playing, loading, ready, error, setVolume, refresh],
   );
 }
